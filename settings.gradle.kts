@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "SplitApk1"
 include(":app")
+include(":feature_browser")
  

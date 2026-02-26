@@ -1,4 +1,4 @@
-package com.example.splitapk1
+package com.example.splitapk1.feature_browser
 
 import android.content.Intent
 import android.os.Bundle
@@ -13,7 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.splitapk1.ui.theme.SplitApk1Theme
+import com.example.splitapk1.CrashHelper
+import com.example.splitapk1.feature_browser.ui.theme.SplitApk1Theme
 
 class MainActivity : ComponentActivity() {
     companion object {

@@ -1,4 +1,4 @@
-package com.example.splitapk1
+package com.example.splitapk1.feature_browser
 
 import android.app.Application
 import android.util.Log

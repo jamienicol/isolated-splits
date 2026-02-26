@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SplitApk1</string>
+    <string name="feature_browser_title">Browser Feature</string>
 </resources>

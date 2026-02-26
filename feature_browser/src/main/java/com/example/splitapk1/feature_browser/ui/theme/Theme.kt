@@ -1,6 +1,5 @@
-package com.example.splitapk1.ui.theme
+package com.example.splitapk1.feature_browser.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

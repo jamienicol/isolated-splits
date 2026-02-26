@@ -1,38 +1,25 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.dynamic.feature)
+    alias(libs.plugins.kotlin.compose)
 }
-
 android {
-    namespace = "com.example.splitapk1"
+    namespace = "com.example.splitapk1.feature_browser"
     compileSdk {
         version = release(36)
     }
-
     defaultConfig {
-        applicationId = "com.example.splitapk1"
         minSdk = 28
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    dynamicFeatures += ":feature_browser"
+    buildFeatures {
+        compose = true
+    }
 }
-
 dependencies {
+    implementation(project(":app"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
