@@ -32,7 +32,7 @@ class MyApplication : Application() {
             val clazz = splitContext.classLoader.loadClass(
                 "com.example.splitapk1.feature_browser.MainProcStuff"
             )
-            mainProcStuff = clazz.getDeclaredConstructor().newInstance()
+            mainProcStuff = clazz.getDeclaredConstructor(Application::class.java).newInstance(this)
         }
     }
 }
