@@ -40,6 +40,4 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.collection)
-    implementation(libs.mozilla.support.remotesettings)
-    implementation(libs.mozilla.appservices.remotesettings)
 }
