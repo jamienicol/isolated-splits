@@ -6,7 +6,8 @@ lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.13.0"
 kotlin = "2.3.20"
 composeBom = "2026.03.00"
-android-components = "149.0.20260318190823"
+android-components = "149.0"
+geckoview = "149.0.20260318190823"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -19,7 +20,9 @@ androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graph
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 
-mozilla-geckoview = { group = "org.mozilla.geckoview", name = "geckoview", version.ref = "android-components" }
+mozilla-geckoview = { group = "org.mozilla.geckoview", name = "geckoview-omni", version.ref = "geckoview" }
+mozilla-appservices-remotesettings = { group = "org.mozilla.appservices", name = "remotesettings", version.ref = "android-components" }
+mozilla-support-remotesettings = { group = "org.mozilla.components", name = "support-remotesettings", version.ref = "android-components" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

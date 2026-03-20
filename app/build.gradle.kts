@@ -41,4 +41,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     implementation(libs.mozilla.geckoview)
+
+    implementation(libs.mozilla.support.remotesettings) {
+        exclude(group = "org.mozilla.telemetry", module = "glean-native")
+    }
+    implementation(libs.mozilla.appservices.remotesettings) {
+        exclude(group = "org.mozilla.telemetry", module = "glean-native")
+    }
 }
