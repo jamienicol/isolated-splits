@@ -18,6 +18,9 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        System.setProperty("jna.debug_load", "true");
+        System.setProperty("jna.debug_load.jna", "true");
+
         Log.d(LOGTAG, "MyApplication.onCreate() ${getProcessName()}")
 
         Log.d(LOGTAG, "classLoader: $classLoader")
