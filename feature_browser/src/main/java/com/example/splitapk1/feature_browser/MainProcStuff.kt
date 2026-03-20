@@ -11,15 +11,20 @@ class MainProcStuff(application: Application) {
         private const val LOGTAG = "MainProcStuff"
     }
 
-    private val remoteSettingsService =
-        RemoteSettingsService(
+    private val remoteSettingsService: RemoteSettingsService
+
+    init {
+        Log.d(LOGTAG, "MainProcStuff constructed ${Application.getProcessName()}")
+
+        val libDir = application.applicationInfo.nativeLibraryDir
+        System.setProperty("jna.boot.library.path", libDir)
+        System.setProperty("jna.library.path", libDir)
+
+        remoteSettingsService = RemoteSettingsService(
             application,
             RemoteSettingsServer.Prod.into(),
             channel = "prototype",
         )
-
-    init {
-        Log.d(LOGTAG, "MainProcStuff constructed ${Application.getProcessName()}")
         Log.d(
             LOGTAG,
             "RemoteSettingsService initialized ${remoteSettingsService.remoteSettingsService}",

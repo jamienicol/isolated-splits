@@ -29,9 +29,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    bundle {
-        abi {
-            enableSplit = false
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
     dynamicFeatures += ":feature_browser"
