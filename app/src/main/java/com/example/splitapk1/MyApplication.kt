@@ -2,7 +2,6 @@ package com.example.splitapk1
 
 import android.app.Application
 import android.util.Log
-
 import org.mozilla.geckoview.GeckoRuntime
 
 class MyApplication : Application() {
@@ -27,7 +26,6 @@ class MyApplication : Application() {
         Log.d(LOGTAG, "classLoader parent: ${classLoader.parent}")
 
         Log.d(LOGTAG, "splitNames: ${applicationInfo.splitNames?.map { i -> i.toString() }}")
-
 
         if (isMainProcess()) {
             // Main process only — load feature split and init MainProcStuff
