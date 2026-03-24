@@ -1,0 +1,7 @@
+<resources>
+    <!-- Required by WorkManager (transitive dep of remote settings).
+         When the dependency is in a feature split, this resource must
+         be defined in the base module for manifest/resource merging. -->
+    <bool name="enable_system_job_service_default">true</bool>
+    <bool name="enable_system_foreground_service_default">true</bool>
+</resources>

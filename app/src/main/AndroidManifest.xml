@@ -26,6 +26,9 @@
             <meta-data
                 android:name="androidx.lifecycle.ProcessLifecycleInitializer"
                 tools:node="remove" />
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                tools:node="remove" />
         </provider>
 
         <service
