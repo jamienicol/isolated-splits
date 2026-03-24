@@ -35,4 +35,5 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.collection)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 }
