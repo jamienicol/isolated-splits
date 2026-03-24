@@ -11,11 +11,108 @@ import android.content.pm.ApplicationInfo
 import android.util.Log
 import dalvik.system.PathClassLoader
 
+/**
+ * Manages replacement classloaders for splits that include ABI config split
+ * native library paths. With isolatedSplits=true, the framework does not
+ * include ABI config splits in classloaders' native library search paths.
+ *
+ * For the base module, the replacement is created in instantiateClassLoader.
+ * For feature modules, replacements are created on demand and used in
+ * instantiateActivity/Service/etc.
+ */
+object SplitClassLoaderManager {
+    private const val LOGTAG = "SplitCLManager"
+
+    private var appInfo: ApplicationInfo? = null
+    private val replacements = mutableMapOf<ClassLoader, ClassLoader>()
+
+    fun init(aInfo: ApplicationInfo) {
+        appInfo = aInfo
+    }
+
+    /**
+     * Get or create a replacement classloader for a feature split classloader.
+     * The replacement is a sibling (not child) of the original — same dex path,
+     * same parent, but with the feature's ABI config split in the native lib path.
+     * This ensures classes are defined by the replacement, so System.loadLibrary
+     * uses its namespace.
+     */
+    fun getReplacementClassLoader(cl: ClassLoader): ClassLoader {
+        replacements[cl]?.let { return it }
+
+        val aInfo = appInfo
+        if (aInfo == null) {
+            Log.d(LOGTAG, "appInfo not initialized yet")
+            return cl
+        }
+        val clStr = cl.toString()
+
+        // Don't replace the base classloader here (handled in instantiateClassLoader)
+        if (clStr.contains("base.apk")) return cl
+
+        val splitSourceDirs = aInfo.splitSourceDirs
+        if (splitSourceDirs == null) {
+            Log.d(LOGTAG, "splitSourceDirs is null")
+            return cl
+        }
+
+        Log.d(LOGTAG, "splitSourceDirs: ${splitSourceDirs.toList()}")
+
+        // Find which feature split APK this classloader is for
+        val featureApk = splitSourceDirs.find { dir ->
+            val name = dir.substringAfterLast("/")
+            name.startsWith("split_") && !name.contains("config") && clStr.contains(name)
+        }
+        if (featureApk == null) {
+            Log.d(LOGTAG, "No feature APK found matching classloader: $clStr")
+            return cl
+        }
+
+        // Derive feature name: split_feature_browser.apk -> feature_browser
+        val featureName = featureApk.substringAfterLast("/")
+            .removePrefix("split_")
+            .removeSuffix(".apk")
+
+        // Find the ABI config split for this feature
+        val abiSplit = splitSourceDirs.find {
+            it.contains(featureName) && it.contains("arm64_v8a")
+        } ?: splitSourceDirs.find {
+            it.contains(featureName) && it.contains("armeabi_v7a")
+        } ?: splitSourceDirs.find {
+            it.contains(featureName) && it.contains("x86_64")
+        } ?: splitSourceDirs.find {
+            it.contains(featureName) && it.contains("x86")
+        }
+
+        if (abiSplit == null) {
+            Log.d(LOGTAG, "No ABI config split found for $featureName")
+            return cl
+        }
+
+        val abiLibDir = when {
+            abiSplit.contains("arm64_v8a") -> "arm64-v8a"
+            abiSplit.contains("armeabi_v7a") -> "armeabi-v7a"
+            abiSplit.contains("x86_64") -> "x86_64"
+            abiSplit.contains("x86") -> "x86"
+            else -> return cl
+        }
+
+        val nativeLibPath = "$abiSplit!/lib/$abiLibDir"
+
+        Log.d(LOGTAG, "Creating replacement for $featureName: dexPath=$featureApk, nativeLibPath=$nativeLibPath")
+
+        // Sibling replacement: same parent as original, classes defined by us
+        val replacement = PathClassLoader(featureApk, nativeLibPath, cl.parent)
+        replacements[cl] = replacement
+        return replacement
+    }
+}
+
 class MyAppComponentFactory: AppComponentFactory() {
     companion object {
         private const val LOGTAG = "MyAppComponentFactory"
 
-        private fun findAbiConfigSplit(aInfo: ApplicationInfo): Pair<String, String>? {
+        private fun findBaseAbiConfigSplit(aInfo: ApplicationInfo): Pair<String, String>? {
             val splitSourceDirs = aInfo.splitSourceDirs ?: return null
             val abiSplit = splitSourceDirs.find { it.contains("split_config.arm64_v8a") }
                 ?: splitSourceDirs.find { it.contains("split_config.armeabi_v7a") }
@@ -35,49 +132,31 @@ class MyAppComponentFactory: AppComponentFactory() {
         }
     }
 
-    /**
-     * With isolatedSplits=true, the framework creates classloaders for each split
-     * but does not include ABI config split native library paths (e.g.
-     * split_config.arm64_v8a.apk!/lib/arm64-v8a) in the base module's classloader.
-     *
-     * The framework also creates the native linker namespace (with library_path)
-     * BEFORE calling instantiateClassLoader, so a child classloader doesn't help —
-     * classes defined by the parent still use the parent's namespace.
-     *
-     * Instead, we create a REPLACEMENT classloader with the same DEX path and
-     * parent as the original, but with the ABI config split added to the native
-     * library search path. Since classes are now defined by our replacement, the
-     * native linker creates a new namespace with the correct library paths when
-     * the first System.loadLibrary call happens.
-     */
     override fun instantiateClassLoader(cl: ClassLoader, aInfo: ApplicationInfo): ClassLoader {
         Log.d(LOGTAG, "instantiateClassLoader() cl=$cl")
 
-        val (abiSplit, abiLibDir) = findAbiConfigSplit(aInfo) ?: return super.instantiateClassLoader(cl, aInfo)
+        SplitClassLoaderManager.init(aInfo)
 
-        // Only replace the base module's classloader (the one with base.apk)
+        val (abiSplit, abiLibDir) = findBaseAbiConfigSplit(aInfo) ?: return super.instantiateClassLoader(cl, aInfo)
+
         if (!cl.toString().contains("base.apk")) {
             return super.instantiateClassLoader(cl, aInfo)
         }
 
-        // Build library search path: original paths + ABI config split
         val librarySearchPath = listOfNotNull(
             aInfo.nativeLibraryDir,
             "${aInfo.sourceDir}!/lib/$abiLibDir",
             "$abiSplit!/lib/$abiLibDir"
         ).joinToString(":")
 
-        Log.d(LOGTAG, "Creating replacement classloader: dexPath=${aInfo.sourceDir}, librarySearchPath=$librarySearchPath")
+        Log.d(LOGTAG, "Creating replacement base classloader: dexPath=${aInfo.sourceDir}, librarySearchPath=$librarySearchPath")
 
-        // Create a new classloader that replaces (not wraps) the original.
-        // Using cl.parent so classes are defined by our classloader, causing
-        // the native linker to create a fresh namespace with our library paths.
         return PathClassLoader(aInfo.sourceDir, librarySearchPath, cl.parent)
     }
 
     override fun instantiateApplication(cl: ClassLoader, className: String): Application {
         Log.d(LOGTAG, "instantiateApplication() $className: $cl")
-        return super.instantiateApplication(cl, className)
+        return super.instantiateApplication(SplitClassLoaderManager.getReplacementClassLoader(cl), className)
     }
 
     override fun instantiateActivity(
@@ -86,7 +165,7 @@ class MyAppComponentFactory: AppComponentFactory() {
         intent: Intent?
     ): Activity {
         Log.d(LOGTAG, "instantiateActivity() $className: $cl")
-        return super.instantiateActivity(cl, className, intent)
+        return super.instantiateActivity(SplitClassLoaderManager.getReplacementClassLoader(cl), className, intent)
     }
 
     override fun instantiateReceiver(
@@ -95,16 +174,16 @@ class MyAppComponentFactory: AppComponentFactory() {
         intent: Intent?
     ): BroadcastReceiver {
         Log.d(LOGTAG, "instantiateReceiver() $className")
-        return super.instantiateReceiver(cl, className, intent)
+        return super.instantiateReceiver(SplitClassLoaderManager.getReplacementClassLoader(cl), className, intent)
     }
 
     override fun instantiateService(cl: ClassLoader, className: String, intent: Intent?): Service {
         Log.d(LOGTAG, "instantiateService() $className")
-        return super.instantiateService(cl, className, intent)
+        return super.instantiateService(SplitClassLoaderManager.getReplacementClassLoader(cl), className, intent)
     }
 
     override fun instantiateProvider(cl: ClassLoader, className: String): ContentProvider {
         Log.d(LOGTAG, "instantiateProvider() $className")
-        return super.instantiateProvider(cl, className)
+        return super.instantiateProvider(SplitClassLoaderManager.getReplacementClassLoader(cl), className)
     }
 }

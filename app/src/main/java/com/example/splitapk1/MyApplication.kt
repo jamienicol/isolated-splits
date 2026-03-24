@@ -32,8 +32,17 @@ class MyApplication : Application() {
 
         if (isMainProcess()) {
             // Main process only — load feature split and init MainProcStuff
+            SplitClassLoaderManager.init(applicationInfo)
+
             val splitContext = createContextForSplit("feature_browser")
-            val clazz = splitContext.classLoader.loadClass(
+            // Use the replacement classloader (with ABI config split native libs)
+            // rather than the framework's classloader which is missing them.
+            val splitCl = SplitClassLoaderManager.getReplacementClassLoader(splitContext.classLoader)
+
+            Log.d(LOGTAG, "Split context class loader: ${splitContext.classLoader}")
+            Log.d(LOGTAG, "Replacement class loader: $splitCl")
+
+            val clazz = splitCl.loadClass(
                 "com.example.splitapk1.feature_browser.MainProcStuff"
             )
             mainProcStuff = clazz.getDeclaredConstructor(Application::class.java).newInstance(this)
