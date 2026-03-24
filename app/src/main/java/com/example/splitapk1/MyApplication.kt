@@ -3,6 +3,7 @@ package com.example.splitapk1
 import android.app.Application
 import android.util.Log
 
+import org.mozilla.geckoview.GeckoRuntime
 
 class MyApplication : Application() {
     companion object {
@@ -10,6 +11,8 @@ class MyApplication : Application() {
     }
 
     private var mainProcStuff: Any? = null
+
+    var runtime: GeckoRuntime? = null
 
     fun isMainProcess(): Boolean {
         return !getProcessName().contains(":")
@@ -33,6 +36,8 @@ class MyApplication : Application() {
                 "com.example.splitapk1.feature_browser.MainProcStuff"
             )
             mainProcStuff = clazz.getDeclaredConstructor().newInstance()
+
+            runtime = GeckoRuntime.create(this)
         }
     }
 }
