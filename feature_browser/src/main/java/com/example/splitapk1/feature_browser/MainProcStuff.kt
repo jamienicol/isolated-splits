@@ -12,20 +12,9 @@ class MainProcStuff(application: Application) {
         private const val LOGTAG = "MainProcStuff"
     }
 
-    private val remoteSettingsService =
-        RemoteSettingsService(
-            application,
-            RemoteSettingsServer.Prod.into(),
-            channel = "prototype",
-        )
-
     init {
         Log.d(LOGTAG, "MainProcStuff constructed ${Application.getProcessName()}")
         Log.d(LOGTAG, "MainProcStuff application class loader: ${application.classLoader}")
         Log.d(LOGTAG, "MainProcStuff::class.java class loader: ${MainProcStuff::class.java.classLoader}")
-        Log.d(
-            LOGTAG,
-            "RemoteSettingsService initialized ${remoteSettingsService.remoteSettingsService}",
-        )
     }
 }
